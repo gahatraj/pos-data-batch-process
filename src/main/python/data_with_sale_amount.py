@@ -85,8 +85,7 @@ data_with_price_included = spark.sql("""
         PP.Product_Price * VD.Quantity_Sold AS Sale_Amount,
         VD.Sale_Currency,
         PP.Product_Name,
-        PP.Product_Price,
-        PP.Product_Price_Currency
+        PP.Product_Price
     FROM validData as VD
     INNER JOIN productPrice as PP
     ON VD.Product_ID = PP.Product_ID

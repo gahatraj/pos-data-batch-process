@@ -31,7 +31,7 @@ s3_bucket = my_bucket
 spark = SparkSession\
     .builder\
     .master("local")\
-    .appName("dataForVendors")\
+    .appName("finalSalesData")\
     .getOrCreate()
 
 # Set Date
@@ -61,6 +61,7 @@ vendor_data_schema = StructType([
 vendor_data_df = spark.createDataFrame(vendor_data, schema= vendor_data_schema)
 vendor_data_df.createOrReplaceTempView("vendorData")
 
+
 # Get USD rates data
 usd_rate_request = s3.Object(bucket_name = s3_bucket, key = f'USD_Rates/USD_Rates_Reference.dat')
 usd_rate_response = usd_rate_request.get()['Body'].read()
@@ -77,6 +78,7 @@ usd_rate_schema = StructType([
 usd_rate_data = spark.createDataFrame(usd_rate, schema = usd_rate_schema)
 usd_rate_data.createOrReplaceTempView("usdRateData")
 
+
 # get data with sale amount
 data_with_sale_amount_request = s3.Object(bucket_name=s3_bucket, key = f'output/enriched/enriched_{pull_date_today}.csv')
 data_with_sale_amount_response = data_with_sale_amount_request.get()['Body'].read()
@@ -92,12 +94,30 @@ data_with_sale_amount_schema = StructType([
     StructField('Sale_Amount', DoubleType(), True),
     StructField('Sale_Currency', StringType(), True),
     StructField('Product_Name',StringType(), True),
-    StructField('Product_Price',IntegerType(), True),
-    StructField('Product_Price_Currency',StringType(), True)
+    StructField('Product_Price',IntegerType(), True)
 ])
 
 data_with_sale_amount_df = spark.createDataFrame(data_with_sale_amount, schema = data_with_sale_amount_schema)
 data_with_sale_amount_df.createOrReplaceTempView('dataWithSaleAmount')
 
-test_data = spark.sql("SELECT * FROM dataWithSaleAmount")
-test_data.show()
+# Get exchange rate in usd and calculate the sale amount
+data_with_sale_amount_USD = spark.sql("""
+    SELECT
+    DSA.*,
+    USRD.Exchange_Rate,
+    ROUND((DSA.Sale_Amount / USRD.Exchange_Rate ),2) AS Sale_Amount_USD
+    FROM dataWithSaleAmount AS DSA
+    INNER JOIN usdRateData AS  USRD
+    ON DSA.Sale_Currency = USRD.Currency_Code
+""")
+print("*********** Final Sales Data **************")
+data_with_sale_amount_USD.show()
+
+def save_final_sales_data(s3,data_with_sale_amount_USD):
+    csv_buf = io.StringIO()
+    final_data = data_with_sale_amount_USD.toPandas()
+    final_data.to_csv(csv_buf, header=True, index=False)
+    csv_buf.seek(0)
+    s3.Object('end-to-end-pipeline', f'Sales_Data_Final/sales_data_final.csv').put(Body=csv_buf.getvalue())
+
+save_final_sales_data(s3, data_with_sale_amount_USD)

@@ -43,7 +43,7 @@ pull_date_yesterday = "_04062020"
 pull_date_today = "_05062020"
 
 # Read past data from s3 bucket
-past_sale_data_bucket = s3.Object(bucket_name= s3_bucket_name, key=f'output/invalid/{pull_date_yesterday}.csv')
+past_sale_data_bucket = s3.Object(bucket_name= s3_bucket_name, key=f'output/invalid/invalid_{pull_date_yesterday}.csv')
 past_sale_data_response = past_sale_data_bucket.get()['Body'].read()
 past_sale_data = pd.read_csv(io.BytesIO(past_sale_data_response), header=0, delimiter=",", low_memory=False)
 
