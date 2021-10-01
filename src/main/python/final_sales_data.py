@@ -6,6 +6,7 @@ import configparser
 from datetime import datetime, date, time, timedelta
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, TimestampType, DoubleType, FloatType
+from sql_connector import write_to_dataware
 
 # setup configuration
 config = configparser.ConfigParser()
@@ -120,4 +121,8 @@ def save_final_sales_data(s3,data_with_sale_amount_USD):
     csv_buf.seek(0)
     s3.Object('end-to-end-pipeline', f'Sales_Data_Final/sales_data_final.csv').put(Body=csv_buf.getvalue())
 
+# save data on s3 data lake
 save_final_sales_data(s3, data_with_sale_amount_USD)
+
+# save data on mysql data warehouse
+write_to_dataware(data_with_sale_amount_USD)

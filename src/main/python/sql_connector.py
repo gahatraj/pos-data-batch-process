@@ -10,23 +10,23 @@ spark = SparkSession\
         .getOrCreate()
 
 # Connect to MySQL DB
-mydata = spark.read.format("jdbc")\
+def write_to_dataware(data):
+         data.write.format("jdbc")\
         .option("url","jdbc:mysql://localhost:3306/batchdatadb")\
-        .option("driver", "com.mysql.jdbc.Driver")\
-        .option("dbtable", "test_table")\
+        .option("driver", "com.mysql.cj.jdbc.Driver")\
+        .option("dbtable", "sale_data_final")\
         .option("user", "root")\
         .option("password", "password")\
+        .mode('append')\
+        .save()
+
+
+mydata = spark.read.format("jdbc") \
+        .option("url", "jdbc:mysql://localhost:3306/batchdatadb") \
+        .option("driver", "com.mysql.jdbc.Driver") \
+        .option("dbtable", "sale_data_final") \
+        .option("user", "root") \
+        .option("password", "password") \
         .load()
+
 mydata.show()
-
-# conn = mysql.connector\
-#         .connect(user='root', database='batchdatadb',password='password', host='127.0.0.1', port='3306')
-
-
-#
-# spark = SparkSession.builder.config("spark.jars", "/usr/share/java/mysql-connector-java-8.0.22.jar") \
-#     .master("local").appName("PySpark_MySQL_test").getOrCreate()
-#
-# wine_df = spark.read.format("jdbc").option("url", "jdbc:mysql://localhost:3306/TestDB") \
-#     .option("driver", "com.mysql.jdbc.Driver").option("dbtable", "Wines") \
-#     .option("user", "me").option("password", "me").load()
